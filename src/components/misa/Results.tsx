@@ -29,7 +29,6 @@ function avgPopularity(slots: (GameTrack | null)[]): number {
 }
 
 export default function Results({ slots, attendance, won, onRestart }: Props) {
-  const avg = avgPopularity(slots);
   const [count, setCount] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [showVerdict, setShowVerdict] = useState(false);
