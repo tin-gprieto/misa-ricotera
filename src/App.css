@@ -77,6 +77,25 @@
   transform: translateY(-2px);
 }
 
+.hero-btn--misa {
+  background: transparent;
+  color: #e1b12c !important;
+  border: 2px solid #e1b12c;
+}
+
+.hero-btn--misa:hover {
+  background: rgba(225, 177, 44, 0.12);
+  border-color: #f4cf52;
+  color: #f4cf52 !important;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 /* ── Navbar links ── */
 .nav-links {
   display: flex;
