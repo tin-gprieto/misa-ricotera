@@ -1,4 +1,4 @@
-.PHONY: install dev build clean fetch-data compute-normalization
+.PHONY: install dev build clean fetch-data compute-normalization deploy
 
 install:
 	npm install
@@ -14,6 +14,9 @@ dev:
 
 build:
 	npm run build
+
+deploy: build
+	npx wrangler pages deploy dist
 
 clean:
 	rm -rf dist node_modules public/data

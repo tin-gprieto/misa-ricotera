@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import type { GameTrack } from "../../lib/misaGame";
 import { SLOT_LABELS, MAX_ATTENDANCE } from "../../lib/misaGame";
 
+function popColor(p: number): string {
+  if (p >= 67) return "#2ecc71";
+  if (p >= 34) return "#f1c40f";
+  return "#e74c3c";
+}
+
 const STADIUM_SRC =
   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/pogo-IM4a5TetY4BIJ7zTeWd4yK18P6ZPzh.jpg";
 
@@ -16,7 +22,14 @@ function formatNumber(n: number) {
   return n.toLocaleString("es-AR");
 }
 
+function avgPopularity(slots: (GameTrack | null)[]): number {
+  const filled = slots.filter(Boolean) as GameTrack[];
+  if (filled.length === 0) return 0;
+  return Math.round(filled.reduce((sum, t) => sum + t.popularity, 0) / filled.length);
+}
+
 export default function Results({ slots, attendance, won, onRestart }: Props) {
+  const avg = avgPopularity(slots);
   const [count, setCount] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [showVerdict, setShowVerdict] = useState(false);
@@ -110,7 +123,7 @@ export default function Results({ slots, attendance, won, onRestart }: Props) {
             {track?.albumCover && (
               <img src={track.albumCover || "/placeholder.svg"} alt="" />
             )}
-            <div>
+            <div className="results-row-body">
               {SLOT_LABELS[i] && (
                 <div className="results-row-label">{SLOT_LABELS[i]}</div>
               )}
@@ -118,6 +131,22 @@ export default function Results({ slots, attendance, won, onRestart }: Props) {
                 {track ? track.name : "—"}
               </div>
             </div>
+            {track && (
+              <div className="results-row-pop">
+                <span className="picker-pop-bar results-pop-bar">
+                  <span
+                    className="picker-pop-fill"
+                    style={{ width: `${track.popularity}%` }}
+                  />
+                </span>
+                <span
+                  className="picker-pop-num"
+                  style={{ color: popColor(track.popularity) }}
+                >
+                  {track.popularity}
+                </span>
+              </div>
+            )}
           </div>
         ))}
       </div>

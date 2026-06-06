@@ -407,22 +407,27 @@
 }
 
 .picker-pop-bar {
-  width: 54px;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--border);
+  width: 80px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .picker-pop-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 4px;
+  /* gradient spans the full bar width so the edge color reveals the tier */
+  background: linear-gradient(90deg, #c0392b 0%, #e67e22 30%, #f1c40f 55%, #2ecc71 100%);
+  background-size: 80px 100%;
+  background-repeat: no-repeat;
 }
 
 .picker-pop-num {
   font-size: 0.78rem;
-  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  font-weight: 600;
   width: 1.6rem;
   text-align: right;
 }
@@ -725,6 +730,65 @@
   border-radius: 6px;
   padding: 0.6rem 0.9rem;
   text-align: left;
+}
+
+.results-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.results-row-pop {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.results-pop-bar {
+  width: 64px !important;
+}
+
+.results-pop-bar .picker-pop-fill {
+  background-size: 64px 100%;
+}
+
+.results-avg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.25rem;
+}
+
+.results-avg-label {
+  font-family: var(--heading-font);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.results-avg-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.results-avg-bar {
+  width: 100px !important;
+}
+
+.results-avg-bar .picker-pop-fill {
+  background-size: 100px 100%;
+}
+
+.results-avg-num {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  width: 1.6rem;
+  text-align: right;
 }
 
 .results-row--pogo {

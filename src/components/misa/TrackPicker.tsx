@@ -1,5 +1,11 @@
 import type { GameAlbum, GameTrack, Mode } from "../../lib/misaGame";
 
+function popColor(p: number): string {
+  if (p >= 67) return "#2ecc71";
+  if (p >= 34) return "#f1c40f";
+  return "#e74c3c";
+}
+
 interface Props {
   album: GameAlbum;
   mode: Mode;
@@ -54,7 +60,12 @@ export default function TrackPicker({
                         style={{ width: `${track.popularity}%` }}
                       />
                     </span>
-                    <span className="picker-pop-num">{track.popularity}</span>
+                    <span
+                      className="picker-pop-num"
+                      style={{ color: popColor(track.popularity) }}
+                    >
+                      {track.popularity}
+                    </span>
                   </span>
                 ) : (
                   <span className="picker-pop-hidden" title="Popularidad oculta">
