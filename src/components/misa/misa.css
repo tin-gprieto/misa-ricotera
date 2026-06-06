@@ -206,12 +206,35 @@
 
 /* ── 3D Spinner ── */
 .spinner-stage {
-  perspective: 1100px;
-  height: 260px;
+  position: relative;
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 1.25rem;
+}
+
+.spinner-perspective {
+  perspective: 1100px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Pointer at the top that marks the selected album */
+.spinner-pointer {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-top: 24px solid var(--gold);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
+  z-index: 5;
 }
 
 .spinner-ring {

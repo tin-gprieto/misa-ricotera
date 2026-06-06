@@ -79,18 +79,28 @@ export default function UltimaMisa() {
   }
 
   function spin() {
-    if (spinning || albums.length === 0) return;
+    // can only spin when idle, with albums available, a free slot, and no
+    // album currently waiting for its track to be added to the setlist.
+    if (spinning || albums.length === 0 || !hasFreeSlot || currentAlbum) return;
     const next = pickRandomAlbum(albums, usedAlbumIds);
     if (!next) return;
 
     setPendingTrack(null);
-    setCurrentAlbum(null);
     setSpinning(true);
 
-    // spin several full turns then land on a random-looking angle
-    const extraTurns = 4 + Math.floor(Math.random() * 3);
-    const landing = Math.floor(Math.random() * 360);
-    setRotation((prev) => prev + extraTurns * 360 + landing);
+    // Land the chosen album exactly under the top pointer.
+    // Each album i sits at angle i*step; it faces front when rotation = -i*step.
+    const index = albums.findIndex((a) => a.id === next.id);
+    const step = 360 / albums.length;
+    const targetBase = ((-index * step) % 360 + 360) % 360;
+
+    setRotation((prev) => {
+      const current = ((prev % 360) + 360) % 360;
+      const extraTurns = 4 + Math.floor(Math.random() * 3);
+      // delta to bring `current` up to `targetBase` going forward, plus full turns
+      const delta = ((targetBase - current) % 360 + 360) % 360;
+      return prev + extraTurns * 360 + delta;
+    });
 
     spinTimer.current = setTimeout(() => {
       setSpinning(false);
@@ -242,13 +252,15 @@ export default function UltimaMisa() {
           <button
             className="spin-btn"
             onClick={spin}
-            disabled={spinning || !hasFreeSlot}
+            disabled={spinning || !hasFreeSlot || !!currentAlbum}
           >
             {spinning
               ? "Girando…"
               : allFilled
                 ? "Setlist completo"
-                : "Girar la ruleta"}
+                : currentAlbum
+                  ? "Elegí y sumá una canción"
+                  : "Girar la ruleta"}
           </button>
 
           {currentAlbum ? (
