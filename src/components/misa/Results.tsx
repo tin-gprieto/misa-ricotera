@@ -22,12 +22,6 @@ function formatNumber(n: number) {
   return n.toLocaleString("es-AR");
 }
 
-function avgPopularity(slots: (GameTrack | null)[]): number {
-  const filled = slots.filter(Boolean) as GameTrack[];
-  if (filled.length === 0) return 0;
-  return Math.round(filled.reduce((sum, t) => sum + t.popularity, 0) / filled.length);
-}
-
 export default function Results({ slots, attendance, won, onRestart }: Props) {
   const [count, setCount] = useState(0);
   const [revealed, setRevealed] = useState(false);
