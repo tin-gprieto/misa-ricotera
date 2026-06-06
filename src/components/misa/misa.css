@@ -207,11 +207,13 @@
 /* ── 3D Spinner ── */
 .spinner-stage {
   position: relative;
+  width: 100%;
   height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 1.25rem;
+  overflow: hidden;
 }
 
 .spinner-perspective {
@@ -220,6 +222,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .spinner-stage {
+    height: 200px;
+  }
+
+  .spinner-perspective {
+    transform: scale(0.65);
+    transform-origin: center center;
+  }
 }
 
 /* Pointer at the top that marks the selected album */
