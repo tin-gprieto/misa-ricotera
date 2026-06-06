@@ -589,8 +589,10 @@ describe("loadGameAlbums", () => {
   ];
 
   beforeEach(() => {
-    vi.mocked(fetchAlbums).mockResolvedValue({ "Patricio Rey": [rawAlbum] });
-    vi.mocked(fetchTracks).mockResolvedValue(rawTracks);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(fetchAlbums).mockResolvedValue({ "Patricio Rey": [rawAlbum] } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(fetchTracks).mockResolvedValue(rawTracks as any);
     vi.mocked(fetchNormalization).mockResolvedValue(normalization);
   });
 
@@ -616,17 +618,19 @@ describe("loadGameAlbums", () => {
   });
 
   it("deduplicates albums with the same name", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(fetchAlbums).mockResolvedValue({
       "Patricio Rey": [rawAlbum, { ...rawAlbum, id: "a2" }],
-    });
+    } as any);
     const albums = await loadGameAlbums();
     expect(albums).toHaveLength(1);
   });
 
   it("skips albums that end up with no eligible tracks", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(fetchTracks).mockResolvedValue([
       { id: "t1", name: "En Vivo", track_number: 1, popularity: 50 },
-    ]);
+    ] as any);
     const albums = await loadGameAlbums();
     expect(albums).toHaveLength(0);
   });
