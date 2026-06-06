@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Outlet, Link, useLocation } from "react-r
 import navbarLogoSrc from "./assets/navbar-logo.png";
 import Home from "./pages/Home";
 import Discography from "./pages/Discography";
+import UltimaMisa from "./pages/UltimaMisa";
 import "./App.css";
 
 function Layout() {
@@ -17,6 +18,7 @@ function Layout() {
           <nav className="nav-links">
             <Link to="/" className={`nav-link${pathname === "/" ? " nav-link--active" : ""}`}>Inicio</Link>
             <Link to="/discografia" className={`nav-link${pathname.startsWith("/discografia") ? " nav-link--active" : ""}`}>Discografía</Link>
+            <Link to="/ultima-misa" className={`nav-link${pathname.startsWith("/ultima-misa") ? " nav-link--active" : ""}`}>La última misa</Link>
           </nav>
         </div>
       </header>
@@ -46,6 +48,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/discografia" element={<Discography />} />
+          <Route path="/ultima-misa" element={<UltimaMisa />} />
         </Route>
       </Routes>
     </BrowserRouter>
