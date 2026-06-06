@@ -1,2 +1,3 @@
 name = "misa-ricotera"
-pages_build_output_dir = "dist"
+main = "src/index.js"
+compatibility_date = "2025-06-06"
