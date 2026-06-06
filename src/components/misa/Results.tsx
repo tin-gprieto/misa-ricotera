@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameTrack } from "../../lib/misaGame";
-import { SLOT_LABELS, slotMultiplier, MAX_ATTENDANCE } from "../../lib/misaGame";
+import { SLOT_LABELS, MAX_ATTENDANCE } from "../../lib/misaGame";
 
 const STADIUM_SRC =
   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/pogo-IM4a5TetY4BIJ7zTeWd4yK18P6ZPzh.jpg";
@@ -118,7 +118,6 @@ export default function Results({ slots, attendance, won, onRestart }: Props) {
                 {track ? track.name : "—"}
               </div>
             </div>
-            <span className="results-row-mult">×{slotMultiplier(i)}</span>
           </div>
         ))}
       </div>

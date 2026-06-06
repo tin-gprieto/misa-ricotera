@@ -539,18 +539,26 @@
   font-size: 0.85rem;
 }
 
-.slot-remove {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 1.2rem;
-  line-height: 1;
-  padding: 0.2rem 0.4rem;
+.slot-spotify {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  color: #1db954;
+  opacity: 0.7;
+  transition: opacity 0.15s, transform 0.12s;
 }
 
-.slot-remove:hover {
-  color: var(--accent2);
+.slot-spotify svg {
+  width: 22px;
+  height: 22px;
+}
+
+.slot-spotify:hover {
+  opacity: 1;
+  transform: scale(1.12);
 }
 
 .slot-cover {
@@ -733,14 +741,6 @@
 .results-row-track {
   font-weight: 600;
   line-height: 1.2;
-}
-
-.results-row-mult {
-  margin-left: auto;
-  font-family: var(--heading-font);
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  flex-shrink: 0;
 }
 
 .misa-restart-btn {

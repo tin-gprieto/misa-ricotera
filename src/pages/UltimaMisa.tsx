@@ -92,13 +92,13 @@ export default function UltimaMisa() {
     // Each album i sits at angle i*step; it faces front when rotation = -i*step.
     const index = albums.findIndex((a) => a.id === next.id);
     const step = 360 / albums.length;
-    const targetBase = ((-index * step) % 360 + 360) % 360;
+    const targetBase = (((-index * step) % 360) + 360) % 360;
 
     setRotation((prev) => {
       const current = ((prev % 360) + 360) % 360;
       const extraTurns = 4 + Math.floor(Math.random() * 3);
       // delta to bring `current` up to `targetBase` going forward, plus full turns
-      const delta = ((targetBase - current) % 360 + 360) % 360;
+      const delta = (((targetBase - current) % 360) + 360) % 360;
       return prev + extraTurns * 360 + delta;
     });
 
@@ -126,14 +126,6 @@ export default function UltimaMisa() {
     setCurrentAlbum(null);
   }
 
-  function removeFromSlot(index: number) {
-    setSlots((prev) => {
-      const copy = [...prev];
-      copy[index] = null;
-      return copy;
-    });
-  }
-
   function startSimulation() {
     if (!allFilled) return;
     const result = computeScore(slots);
@@ -156,7 +148,10 @@ export default function UltimaMisa() {
     return (
       <div className="misa misa-intro">
         <div className="misa-stadium">
-          <img src={STADIUM_SRC || "/placeholder.svg"} alt="Multitud en un recital ricotero" />
+          <img
+            src={STADIUM_SRC || "/placeholder.svg"}
+            alt="Multitud en un recital ricotero"
+          />
           <div className="misa-stadium-overlay">
             <h1 className="misa-title text-balance">La última misa</h1>
             <p className="misa-subtitle text-pretty">
@@ -168,15 +163,15 @@ export default function UltimaMisa() {
 
         <div className="misa-desc-card">
           <p>
-            Sos el encargado de organizar <strong>la última misa ricotera</strong>.
-            Girá la ruleta de discos, descubrí qué álbum salió y elegí una de sus
-            canciones para cada uno de los 5 momentos del show.
+            Sos el encargado de organizar{" "}
+            <strong>la última misa ricotera</strong>. Girá la ruleta de discos,
+            descubrí qué álbum salió y elegí 5 canciones para que el pueblo
+            ricotero no deje de agitar.
           </p>
           <p>
             La apertura, el cierre y sobre todo el{" "}
             <span className="misa-goal">Pogo más grande del mundo</span> son
-            decisivos. Cuando completes los 5 lugares, arrancá la simulación y
-            mirá cuánta gente llenó el estadio.
+            decisivos!
           </p>
         </div>
 
@@ -247,7 +242,11 @@ export default function UltimaMisa() {
         <section className="misa-panel">
           <h2 className="misa-panel-title">La ruleta de discos</h2>
 
-          <AlbumSpinner albums={albums} rotation={rotation} spinning={spinning} />
+          <AlbumSpinner
+            albums={albums}
+            rotation={rotation}
+            spinning={spinning}
+          />
 
           <button
             className="spin-btn"
@@ -287,7 +286,10 @@ export default function UltimaMisa() {
         <section className="misa-panel">
           <h2 className="misa-panel-title">El setlist</h2>
           {pendingTrack && (
-            <p className="picker-cta" style={{ marginTop: 0, marginBottom: "0.75rem" }}>
+            <p
+              className="picker-cta"
+              style={{ marginTop: 0, marginBottom: "0.75rem" }}
+            >
               «{pendingTrack.name}» lista — elegí un lugar libre del setlist
             </p>
           )}
@@ -296,7 +298,6 @@ export default function UltimaMisa() {
             slots={slots}
             pendingTrack={pendingTrack}
             onAssign={assignToSlot}
-            onRemove={removeFromSlot}
           />
 
           <button
@@ -304,7 +305,9 @@ export default function UltimaMisa() {
             onClick={startSimulation}
             disabled={!allFilled}
           >
-            {allFilled ? "Empezar la misa" : `Faltan ${5 - filledCount} canciones`}
+            {allFilled
+              ? "Empezar la misa"
+              : `Faltan ${5 - filledCount} canciones`}
           </button>
         </section>
       </div>
