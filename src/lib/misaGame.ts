@@ -27,13 +27,22 @@ export interface GameAlbum {
 
 // Internal scoring constants (must NOT be shown to the player)
 const MULTIPLIERS = [1.5, 1, 2, 1.5, 1]; // by slot index
-const MAX_POPULARITY_SUM = 500;
-const MAX_CAPACITY = 400_000;
-const NO_JIJIJI_PENALTY = 50_000;
-const NO_JIJIJI_CAP = MAX_CAPACITY - 1; // hard ceiling without the winning track
-const WIN_POPULARITY_THRESHOLD = 400;
 const POGO_SLOT_INDEX = 2;
-const WINNING_TRACK = "ji ji ji";
+
+// Stage thresholds (popularity sum boundaries)
+const STAGE1_MAX = 352; // 0–352 → stage 1
+const STAGE2_MAX = 411; // 353–411 → stage 2; 412+ → stage 3 or 4
+
+const WINNING_POGO_TRACKS = [
+  "ñam fri fruli fali fru",
+  "ji ji ji",
+  "fuegos de octubre",
+  "rock para el negro atila",
+  "ella debe estar tan linda",
+  "el pibe de los astilleros",
+  "nadie es perfecto",
+  "mariposa pontiac",
+];
 
 export function slotMultiplier(index: number): number {
   return MULTIPLIERS[index] ?? 1;
@@ -125,20 +134,26 @@ export function computeScore(slots: (GameTrack | null)[]): ScoreResult {
     popularitySum += track.popularity * slotMultiplier(i);
   });
 
-  const ratio = Math.min(1, popularitySum / MAX_POPULARITY_SUM);
-  const raw = Math.round(ratio * MAX_CAPACITY);
-
   const pogoTrack = slots[POGO_SLOT_INDEX];
-  const pogoIsJiJiJi =
-    !!pogoTrack && pogoTrack.name.trim().toLowerCase().startsWith(WINNING_TRACK);
+  const pogoIsWinning =
+    !!pogoTrack &&
+    WINNING_POGO_TRACKS.some((name) =>
+      pogoTrack.name.trim().toLowerCase().startsWith(name),
+    );
 
-  const attendance = pogoIsJiJiJi
-    ? raw
-    : Math.min(NO_JIJIJI_CAP, Math.max(0, raw - NO_JIJIJI_PENALTY));
+  if (popularitySum > STAGE2_MAX && pogoIsWinning) {
+    return { attendance: 400_000, won: true };
+  }
 
-  const won = pogoIsJiJiJi && popularitySum > WIN_POPULARITY_THRESHOLD;
+  const base =
+    popularitySum <= STAGE1_MAX
+      ? 100_000
+      : popularitySum <= STAGE2_MAX
+        ? 200_000
+        : 300_000;
 
-  return { attendance, won };
+  const attendance = base + Math.floor(Math.random() * 100_001);
+  return { attendance, won: false };
 }
 
 export const SLOT_LABELS: (string | null)[] = [
@@ -149,4 +164,4 @@ export const SLOT_LABELS: (string | null)[] = [
   "Cierre",
 ];
 
-export const MAX_ATTENDANCE = MAX_CAPACITY;
+export const MAX_ATTENDANCE = 400_000;
