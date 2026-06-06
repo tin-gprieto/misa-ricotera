@@ -264,3 +264,29 @@
   color: var(--text-muted);
   font-size: 0.8rem;
 }
+
+.footer-copy {
+  margin-top: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.footer-sep {
+  opacity: 0.4;
+}
+
+.footer-social {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footer-social:hover {
+  color: var(--text);
+}
