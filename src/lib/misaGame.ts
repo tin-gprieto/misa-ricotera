@@ -26,7 +26,7 @@ export interface GameAlbum {
 }
 
 // Internal scoring constants (must NOT be shown to the player)
-const MULTIPLIERS = [1.5, 1, 2, 1.5, 1]; // by slot index
+const MULTIPLIERS = [1.25, 1, 1.5, 1, 1.25]; // by slot index
 const POGO_SLOT_INDEX = 2;
 
 // Stage thresholds (popularity sum boundaries)
@@ -46,6 +46,19 @@ const WINNING_POGO_TRACKS = [
 
 export function slotMultiplier(index: number): number {
   return MULTIPLIERS[index] ?? 1;
+}
+
+// Penalty: special slots (apertura, pogo, cierre) with popularity below this
+// threshold use PENALTY_MULT instead of their normal multiplier.
+const SPECIAL_SLOTS: ReadonlySet<number> = new Set([0, 2, 4]);
+export const SPECIAL_SLOT_THRESHOLD = 90;
+const PENALTY_MULT = 0.5;
+
+export function effectiveMultiplier(slotIndex: number, popularity: number): number {
+  if (SPECIAL_SLOTS.has(slotIndex) && popularity < SPECIAL_SLOT_THRESHOLD) {
+    return PENALTY_MULT;
+  }
+  return slotMultiplier(slotIndex);
 }
 
 /** Loads every eligible album (studio albums, no live, no singles) with its tracks. */
@@ -131,7 +144,7 @@ export function computeScore(slots: (GameTrack | null)[]): ScoreResult {
   let popularitySum = 0;
   slots.forEach((track, i) => {
     if (!track) return;
-    popularitySum += track.popularity * slotMultiplier(i);
+    popularitySum += track.popularity * effectiveMultiplier(i, track.popularity);
   });
 
   const pogoTrack = slots[POGO_SLOT_INDEX];
