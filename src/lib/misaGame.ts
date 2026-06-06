@@ -29,6 +29,8 @@ export interface GameAlbum {
 const MULTIPLIERS = [1.5, 1, 2, 1.5, 1]; // by slot index
 const MAX_POPULARITY_SUM = 500;
 const MAX_CAPACITY = 400_000;
+const NO_JIJIJI_PENALTY = 50_000;
+const NO_JIJIJI_CAP = MAX_CAPACITY - 1; // hard ceiling without the winning track
 const WIN_POPULARITY_THRESHOLD = 400;
 const POGO_SLOT_INDEX = 2;
 const WINNING_TRACK = "ji ji ji";
@@ -124,11 +126,16 @@ export function computeScore(slots: (GameTrack | null)[]): ScoreResult {
   });
 
   const ratio = Math.min(1, popularitySum / MAX_POPULARITY_SUM);
-  const attendance = Math.round(ratio * MAX_CAPACITY);
+  const raw = Math.round(ratio * MAX_CAPACITY);
 
   const pogoTrack = slots[POGO_SLOT_INDEX];
   const pogoIsJiJiJi =
     !!pogoTrack && pogoTrack.name.trim().toLowerCase().startsWith(WINNING_TRACK);
+
+  const attendance = pogoIsJiJiJi
+    ? raw
+    : Math.min(NO_JIJIJI_CAP, Math.max(0, raw - NO_JIJIJI_PENALTY));
+
   const won = pogoIsJiJiJi && popularitySum > WIN_POPULARITY_THRESHOLD;
 
   return { attendance, won };
