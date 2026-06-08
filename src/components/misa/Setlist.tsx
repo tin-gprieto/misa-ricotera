@@ -1,13 +1,20 @@
-import type { GameTrack } from "../../lib/misaGame";
-import { SLOT_LABELS } from "../../lib/misaGame";
+import type { GameTrack, Mode } from "../../lib/misaGame";
+import { SLOT_LABELS, SPECIAL_SLOT_THRESHOLD } from "../../lib/misaGame";
+
+function popColor(p: number): string {
+  if (p >= 70) return "#2ecc71";
+  if (p >= 51) return "#f1c40f";
+  return "#e74c3c";
+}
 
 interface Props {
   slots: (GameTrack | null)[];
   pendingTrack: GameTrack | null;
+  mode: Mode;
   onAssign: (index: number) => void;
 }
 
-export default function Setlist({ slots, pendingTrack, onAssign }: Props) {
+export default function Setlist({ slots, pendingTrack, mode, onAssign }: Props) {
   return (
     <ul className="slots">
       {slots.map((track, index) => {
@@ -41,7 +48,7 @@ export default function Setlist({ slots, pendingTrack, onAssign }: Props) {
             {track?.albumCover && (
               <img
                 className="slot-cover"
-                src={track.albumCover || "/placeholder.svg"}
+                src={track.albumCover}
                 alt=""
               />
             )}
@@ -55,12 +62,24 @@ export default function Setlist({ slots, pendingTrack, onAssign }: Props) {
                 </>
               ) : (
                 <p className="slot-empty-text">
-                  {targetable
-                    ? "Tocá para colocar la canción aquí"
-                    : "Vacío"}
+                  {targetable ? "Tocá para colocar la canción aquí" : "Vacío"}
                 </p>
               )}
             </div>
+
+            {track && mode === "easy" && (
+              <span className="slot-pop">
+                {track.popularity >= SPECIAL_SLOT_THRESHOLD && (
+                  <span className="slot-pop-star">★</span>
+                )}
+                <span
+                  className="slot-pop-num"
+                  style={{ color: popColor(track.popularity) }}
+                >
+                  {track.popularity}
+                </span>
+              </span>
+            )}
 
             {track && (
               <a

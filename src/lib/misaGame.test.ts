@@ -44,9 +44,11 @@ function makeAlbum(overrides: Partial<GameAlbum> = {}): GameAlbum {
 
 /**
  * Builds a full 5-slot array where every track has the given popularity.
- * Effective sum depends on penalty rule:
- *   pop < 90 (all special slots penalised): pop × (0.5+1+0.5+1+0.5) = pop × 3.5
- *   pop ≥ 90 (no penalty): pop × (1.25+1+1.5+1+1.25) = pop × 6
+ * Effective sum by tier (special slots = 0, 2, 4):
+ *   pop <  70 → ×(0.5 + 1 + 0.5  + 1 + 0.5 ) = pop × 3.5
+ *   70–79     → ×(0.75+ 1 + 0.75 + 1 + 0.75) = pop × 4.25
+ *   80–89     → ×(1   + 1 + 1    + 1 + 1   ) = pop × 5
+ *   pop ≥ 90  → ×(1.25+ 1 + 1.5  + 1 + 1.25) = pop × 6
  */
 function uniformSlots(popularity: number, pogoName = "Test Track"): GameTrack[] {
   return [0, 1, 2, 3, 4].map((i) =>
@@ -88,57 +90,125 @@ describe("slotMultiplier", () => {
 });
 
 // ── effectiveMultiplier ───────────────────────────────────────────────────────
+//
+// Tiers for special slots (0 = Apertura, 2 = Pogo, 4 = Cierre):
+//   pop <  70  → ×0.5  (penalty)
+//   70–79      → ×0.75 (less penalty)
+//   80–89      → ×1    (neutral)
+//   pop ≥  90  → normal slot multiplier (×1.25 for 0/4, ×1.5 for 2)
+//
+// Non-special slots (1, 3) are always ×1.
 
 describe("effectiveMultiplier", () => {
-  // Special slots (0=Apertura, 2=Pogo, 4=Cierre) with pop < SPECIAL_SLOT_THRESHOLD
-  // use ×0.5 instead of their normal multiplier (penalty for weak key tracks).
+  describe("tier 1 — penalty (pop < 70)", () => {
+    it("slot 0: returns 0.5 at pop=0 and pop=69", () => {
+      expect(effectiveMultiplier(0, 0)).toBe(0.5);
+      expect(effectiveMultiplier(0, 69)).toBe(0.5);
+    });
 
-  it("returns 0.5 for Apertura (slot 0) when pop < threshold", () => {
-    expect(effectiveMultiplier(0, 0)).toBe(0.5);
-    expect(effectiveMultiplier(0, 89)).toBe(0.5);
+    it("slot 2: returns 0.5 at pop=0 and pop=69", () => {
+      expect(effectiveMultiplier(2, 0)).toBe(0.5);
+      expect(effectiveMultiplier(2, 69)).toBe(0.5);
+    });
+
+    it("slot 4: returns 0.5 at pop=0 and pop=69", () => {
+      expect(effectiveMultiplier(4, 0)).toBe(0.5);
+      expect(effectiveMultiplier(4, 69)).toBe(0.5);
+    });
   });
 
-  it("returns 0.5 for Pogo (slot 2) when pop < threshold", () => {
-    expect(effectiveMultiplier(2, 0)).toBe(0.5);
-    expect(effectiveMultiplier(2, 89)).toBe(0.5);
+  describe("tier 2 — less penalty (70 ≤ pop < 80)", () => {
+    it("slot 0: returns 0.75 at pop=70 and pop=79", () => {
+      expect(effectiveMultiplier(0, 70)).toBe(0.75);
+      expect(effectiveMultiplier(0, 79)).toBe(0.75);
+    });
+
+    it("slot 2: returns 0.75 at pop=70 and pop=79", () => {
+      expect(effectiveMultiplier(2, 70)).toBe(0.75);
+      expect(effectiveMultiplier(2, 79)).toBe(0.75);
+    });
+
+    it("slot 4: returns 0.75 at pop=70 and pop=79", () => {
+      expect(effectiveMultiplier(4, 70)).toBe(0.75);
+      expect(effectiveMultiplier(4, 79)).toBe(0.75);
+    });
   });
 
-  it("returns 0.5 for Cierre (slot 4) when pop < threshold", () => {
-    expect(effectiveMultiplier(4, 0)).toBe(0.5);
-    expect(effectiveMultiplier(4, 89)).toBe(0.5);
+  describe("tier 3 — neutral (80 ≤ pop < 90)", () => {
+    it("slot 0: returns 1 at pop=80 and pop=89", () => {
+      expect(effectiveMultiplier(0, 80)).toBe(1);
+      expect(effectiveMultiplier(0, 89)).toBe(1);
+    });
+
+    it("slot 2: returns 1 at pop=80 and pop=89", () => {
+      expect(effectiveMultiplier(2, 80)).toBe(1);
+      expect(effectiveMultiplier(2, 89)).toBe(1);
+    });
+
+    it("slot 4: returns 1 at pop=80 and pop=89", () => {
+      expect(effectiveMultiplier(4, 80)).toBe(1);
+      expect(effectiveMultiplier(4, 89)).toBe(1);
+    });
   });
 
-  it("returns normal multiplier 1.25 for Apertura when pop >= threshold", () => {
-    expect(effectiveMultiplier(0, 90)).toBe(1.25);
-    expect(effectiveMultiplier(0, 100)).toBe(1.25);
+  describe("tier 4 — full bonus (pop ≥ 90)", () => {
+    it("slot 0 (Apertura): returns 1.25 at pop=90 and pop=100", () => {
+      expect(effectiveMultiplier(0, 90)).toBe(1.25);
+      expect(effectiveMultiplier(0, 100)).toBe(1.25);
+    });
+
+    it("slot 2 (Pogo): returns 1.5 at pop=90 and pop=100", () => {
+      expect(effectiveMultiplier(2, 90)).toBe(1.5);
+      expect(effectiveMultiplier(2, 100)).toBe(1.5);
+    });
+
+    it("slot 4 (Cierre): returns 1.25 at pop=90 and pop=100", () => {
+      expect(effectiveMultiplier(4, 90)).toBe(1.25);
+      expect(effectiveMultiplier(4, 100)).toBe(1.25);
+    });
   });
 
-  it("returns normal multiplier 1.5 for Pogo when pop >= threshold", () => {
-    expect(effectiveMultiplier(2, 90)).toBe(1.5);
-    expect(effectiveMultiplier(2, 100)).toBe(1.5);
+  describe("tier boundaries", () => {
+    it("69 → 0.5, 70 → 0.75 for all special slots", () => {
+      for (const slot of [0, 2, 4]) {
+        expect(effectiveMultiplier(slot, 69)).toBe(0.5);
+        expect(effectiveMultiplier(slot, 70)).toBe(0.75);
+      }
+    });
+
+    it("79 → 0.75, 80 → 1 for all special slots", () => {
+      for (const slot of [0, 2, 4]) {
+        expect(effectiveMultiplier(slot, 79)).toBe(0.75);
+        expect(effectiveMultiplier(slot, 80)).toBe(1);
+      }
+    });
+
+    it("89 → 1, 90 → normal multiplier for all special slots", () => {
+      expect(effectiveMultiplier(0, 89)).toBe(1);
+      expect(effectiveMultiplier(0, 90)).toBe(1.25);
+      expect(effectiveMultiplier(2, 89)).toBe(1);
+      expect(effectiveMultiplier(2, 90)).toBe(1.5);
+      expect(effectiveMultiplier(4, 89)).toBe(1);
+      expect(effectiveMultiplier(4, 90)).toBe(1.25);
+    });
   });
 
-  it("returns normal multiplier 1.25 for Cierre when pop >= threshold", () => {
-    expect(effectiveMultiplier(4, 90)).toBe(1.25);
-    expect(effectiveMultiplier(4, 100)).toBe(1.25);
-  });
+  describe("non-special slots", () => {
+    it("slot 1 is always ×1 regardless of pop", () => {
+      expect(effectiveMultiplier(1, 0)).toBe(1);
+      expect(effectiveMultiplier(1, 69)).toBe(1);
+      expect(effectiveMultiplier(1, 75)).toBe(1);
+      expect(effectiveMultiplier(1, 85)).toBe(1);
+      expect(effectiveMultiplier(1, 100)).toBe(1);
+    });
 
-  it("never penalises non-special slots regardless of pop", () => {
-    expect(effectiveMultiplier(1, 0)).toBe(1);
-    expect(effectiveMultiplier(1, 89)).toBe(1);
-    expect(effectiveMultiplier(1, 90)).toBe(1);
-    expect(effectiveMultiplier(3, 0)).toBe(1);
-    expect(effectiveMultiplier(3, 89)).toBe(1);
-    expect(effectiveMultiplier(3, 90)).toBe(1);
-  });
-
-  it("threshold boundary: pop=89 is penalised, pop=90 is not", () => {
-    expect(effectiveMultiplier(0, 89)).toBe(0.5);
-    expect(effectiveMultiplier(0, 90)).toBe(1.25);
-    expect(effectiveMultiplier(2, 89)).toBe(0.5);
-    expect(effectiveMultiplier(2, 90)).toBe(1.5);
-    expect(effectiveMultiplier(4, 89)).toBe(0.5);
-    expect(effectiveMultiplier(4, 90)).toBe(1.25);
+    it("slot 3 is always ×1 regardless of pop", () => {
+      expect(effectiveMultiplier(3, 0)).toBe(1);
+      expect(effectiveMultiplier(3, 69)).toBe(1);
+      expect(effectiveMultiplier(3, 75)).toBe(1);
+      expect(effectiveMultiplier(3, 85)).toBe(1);
+      expect(effectiveMultiplier(3, 100)).toBe(1);
+    });
   });
 
   it("SPECIAL_SLOT_THRESHOLD export equals 90", () => {
@@ -182,14 +252,12 @@ describe("pickRandomAlbum", () => {
 });
 
 // ── computeScore ──────────────────────────────────────────────────────────────
+//
+// STAGE1_MAX = 352  → base 100_000
+// STAGE2_MAX = 411  → base 200_000; above → base 300_000
+// Won: sum > 411 AND pogo slot starts with a winning track name
 
 describe("computeScore", () => {
-  // MULTIPLIERS = [1.25, 1, 1.5, 1.25, 1]
-  // Penalty: slots 0, 2, 4 with pop < 90 → ×0.5 instead of normal mult
-  // STAGE1_MAX = 352  → base 100_000
-  // STAGE2_MAX = 411  → base 200_000; above → base 300_000
-  // Won: sum > 411 AND pogo slot starts with a winning track name
-
   describe("null slots", () => {
     it("treats null slots as zero contribution", () => {
       const { attendance } = computeScore([null, null, null, null, null]);
@@ -206,9 +274,19 @@ describe("computeScore", () => {
   });
 
   describe("stage 1 (sum ≤ 352)", () => {
-    it("lands in 100k–200k range for low popularity (pop=50, sum≈187.5 with penalty)", () => {
-      // pop=50 < 90 → all special slots penalised: 50×(0.5+1+0.5+1.25+0.5) = 187.5 ≤ 352
+    it("pop=50 < 70 → special slots ×0.5; sum = 50×3.5 = 175 ≤ 352 → 100k–200k", () => {
+      // slot 0: 50×0.5=25 | slot 1: 50×1=50 | slot 2: 50×0.5=25 | slot 3: 50×1=50 | slot 4: 50×0.5=25
+      // sum = 175
       const { attendance, won } = computeScore(uniformSlots(50));
+      expect(won).toBe(false);
+      expect(attendance).toBeGreaterThanOrEqual(100_000);
+      expect(attendance).toBeLessThanOrEqual(200_000);
+    });
+
+    it("pop=75 in tier 70–79 → special slots ×0.75; sum = 75×4.25 = 318.75 ≤ 352 → 100k–200k", () => {
+      // slot 0: 75×0.75=56.25 | slot 1: 75×1=75 | slot 2: 75×0.75=56.25 | slot 3: 75×1=75 | slot 4: 75×0.75=56.25
+      // sum = 318.75
+      const { attendance, won } = computeScore(uniformSlots(75));
       expect(won).toBe(false);
       expect(attendance).toBeGreaterThanOrEqual(100_000);
       expect(attendance).toBeLessThanOrEqual(200_000);
@@ -216,17 +294,13 @@ describe("computeScore", () => {
   });
 
   describe("stage 2 (353 ≤ sum ≤ 411)", () => {
-    it("lands in 200k–300k range when apertura/cierre are ≥90 but pogo is penalised", () => {
-      // Slot 0 pop=90 ≥ 90 → ×1.25=112.5 (no penalty)
-      // Slot 1 pop=50 → ×1=50
-      // Slot 2 pop=88 < 90 → ×0.5=44 (penalty; non-winning track)
-      // Slot 3 pop=50 → ×1=50
-      // Slot 4 pop=90 ≥ 90 → ×1.25=112.5 (no penalty)
-      // sum = 369 → stage 2
+    it("apertura/cierre ≥ 90 (×1.25), pogo in tier 70–79 (×0.75) → sum ≈ 381 → 200k–300k", () => {
+      // slot 0: 90×1.25=112.5 | slot 1: 50×1=50 | slot 2: 75×0.75=56.25 | slot 3: 50×1=50 | slot 4: 90×1.25=112.5
+      // sum = 381.25 → stage 2
       const slots: (GameTrack | null)[] = [
         makeTrack({ id: "s2-0", popularity: 90 }),
         makeTrack({ id: "s2-1", popularity: 50 }),
-        makeTrack({ id: "s2-2", popularity: 88, name: "Not a Winner" }),
+        makeTrack({ id: "s2-2", popularity: 75, name: "Not a Winner" }),
         makeTrack({ id: "s2-3", popularity: 50 }),
         makeTrack({ id: "s2-4", popularity: 90 }),
       ];
@@ -235,11 +309,21 @@ describe("computeScore", () => {
       expect(attendance).toBeGreaterThanOrEqual(200_000);
       expect(attendance).toBeLessThanOrEqual(300_000);
     });
+
+    it("all special slots in tier 80–89 (×1) → sum = 85×5 = 425... adjusting: 80×5=400 → stage 2", () => {
+      // slot 0: 80×1=80 | slot 1: 80×1=80 | slot 2: 80×1=80 | slot 3: 80×1=80 | slot 4: 80×1=80
+      // sum = 400 → stage 2
+      const { attendance, won } = computeScore(uniformSlots(80));
+      expect(won).toBe(false);
+      expect(attendance).toBeGreaterThanOrEqual(200_000);
+      expect(attendance).toBeLessThanOrEqual(300_000);
+    });
   });
 
   describe("stage 3 (sum > 411, no win condition)", () => {
-    it("lands in 300k–400k range for all-high popularity (pop=90, sum=540)", () => {
-      // pop=90 ≥ 90 → no penalty: 90×(1.25+1+1.5+1.25+1) = 90×6 = 540 > 411
+    it("pop=90 ≥ 90 → no penalty; sum = 90×6 = 540 > 411 → 300k–400k", () => {
+      // slot 0: 90×1.25=112.5 | slot 1: 90×1=90 | slot 2: 90×1.5=135 | slot 3: 90×1=90 | slot 4: 90×1.25=112.5
+      // sum = 540
       const { attendance, won } = computeScore(uniformSlots(90));
       expect(won).toBe(false);
       expect(attendance).toBeGreaterThanOrEqual(300_000);
@@ -249,7 +333,7 @@ describe("computeScore", () => {
 
   describe("win condition", () => {
     it("returns 400k and won=true when sum > 411 and pogo is a winning track", () => {
-      // pop=90 → sum=540 > 411; pogo slot (index 2) has "Ji Ji Ji" (90 ≥ 90, no penalty)
+      // pop=90 → sum=540 > 411; pogo slot (index 2) has "Ji Ji Ji" (≥90 → no penalty)
       const { attendance, won } = computeScore(uniformSlots(90, "Ji Ji Ji"));
       expect(won).toBe(true);
       expect(attendance).toBe(MAX_ATTENDANCE);
@@ -266,7 +350,7 @@ describe("computeScore", () => {
     });
 
     it("does NOT win when sum ≤ 411 even with a winning pogo track", () => {
-      // pop=50 < 90 → all special slots penalised: sum = 187.5 ≤ 411
+      // pop=50 < 70 → special slots ×0.5; sum=175 ≤ 411
       const { won } = computeScore(uniformSlots(50, "Ji Ji Ji"));
       expect(won).toBe(false);
     });
@@ -299,6 +383,26 @@ describe("computeScore", () => {
         const { won } = computeScore(uniformSlots(90, name));
         expect(won, `Expected win for pogo track "${name}"`).toBe(true);
       }
+    });
+
+    it("does NOT win when pogo winning track is in tier 70–79 (×0.75) — sum stays ≤ 411", () => {
+      // pop=75 everywhere: sum=75×4.25=318.75 ≤ 411 → no win even with winning track name
+      const { won } = computeScore(uniformSlots(75, "Ji Ji Ji"));
+      expect(won).toBe(false);
+    });
+
+    it("does NOT win when pogo winning track is in tier 80–89 (×1) and overall sum ≤ 411", () => {
+      // slot 0: 90×1.25=112.5 | slot 1: 50×1=50 | slot 2: 85×1=85 | slot 3: 50×1=50 | slot 4: 90×1.25=112.5
+      // sum = 410 ≤ 411 → no win (borderline stage 2)
+      const slots: (GameTrack | null)[] = [
+        makeTrack({ id: "t0", popularity: 90 }),
+        makeTrack({ id: "t1", popularity: 50 }),
+        makeTrack({ id: "t2", popularity: 85, name: "Ji Ji Ji" }),
+        makeTrack({ id: "t3", popularity: 50 }),
+        makeTrack({ id: "t4", popularity: 90 }),
+      ];
+      const { won } = computeScore(slots);
+      expect(won).toBe(false);
     });
   });
 
@@ -343,6 +447,12 @@ describe("MAX_ATTENDANCE", () => {
 });
 
 // ── Stage scenarios with real track names ─────────────────────────────────────
+//
+// Tier multipliers for special slots (0, 2, 4):
+//   pop <  70 → ×0.5  | slot 0/4 effective: 0.5  | slot 2 effective: 0.5
+//   70–79     → ×0.75 | slot 0/4 effective: 0.75 | slot 2 effective: 0.75
+//   80–89     → ×1    | slot 0/4 effective: 1     | slot 2 effective: 1
+//   pop ≥ 90  → full  | slot 0/4 effective: 1.25  | slot 2 effective: 1.5
 
 type SetlistRow = {
   slot: number;
@@ -367,7 +477,7 @@ function printSetlist(
       canción: track.name,
       pop: track.popularity,
       "×eff": mult,
-      score: (track.popularity * mult).toFixed(1),
+      score: (track.popularity * mult).toFixed(2),
     };
   });
 
@@ -379,77 +489,82 @@ function printSetlist(
         result.attendance < 300_000 ? "~200k–300k" : "~300k–400k"
       })`;
 
-  console.log(`\n${"─".repeat(60)}`);
+  console.log(`\n${"─".repeat(64)}`);
   console.log(`  ${title}`);
-  console.log("─".repeat(60));
+  console.log("─".repeat(64));
   console.table(rows);
-  console.log(`  Total ponderado : ${total.toFixed(1)}`);
+  console.log(`  Total ponderado : ${total.toFixed(2)}`);
   console.log(`  Resultado       : ${verdict}`);
-  console.log("─".repeat(60));
+  console.log("─".repeat(64));
 }
 
-// Real normalized popularities (norm = round((raw - 12) / 58 * 100)):
-//   raw=35 → norm=40 | raw=37 → norm=43 | raw=41 → norm=50 | raw=53 → norm=71
-//   raw=54 → norm=72 | raw=63 → norm=88 | raw=64 → norm=90 | raw=65 → norm=91
-//   raw=66 → norm=93 | raw=67 → norm=95 | raw=69 → norm=98 | raw=70 → norm=100
-//
-// Effective multipliers with penalty rule (pop < 90 in slots 0, 2, 4 → ×0.5):
-//   slot 0: pop ≥ 90 → ×1.25;  pop < 90 → ×0.5
-//   slot 1: always ×1
-//   slot 2: pop ≥ 90 → ×1.5;   pop < 90 → ×0.5
-//   slot 3: always ×1
-//   slot 4: pop ≥ 90 → ×1.25;  pop < 90 → ×0.5
-
 describe("stage scenarios (real track names)", () => {
-  it("stage 1 — convocatoria baja, todos penalizados (~100k–200k, total≈175)", () => {
-    // all pop=50 < 90 → special slots penalised: 50×(0.5+1+0.5+1+0.5) = 175 ≤ 352
+  it("stage 1 — todos pop=50 < 70, special slots ×0.5; sum=175 → ~100k–200k", () => {
+    // slot 0: 50×0.5=25 | slot 1: 50×1=50 | slot 2: 50×0.5=25 | slot 3: 50×1=50 | slot 4: 50×0.5=25
+    // sum = 175 ≤ 352
     const slots: GameTrack[] = [
-      makeTrack({ id: "s1-0", name: "Una Rata Muerta Entre los Geranios",     popularity: 50, trackNumber: 1 }),
-      makeTrack({ id: "s1-1", name: "Sopa de Lágrimas (Para el Pibe Delete)", popularity: 50, trackNumber: 2 }),
-      makeTrack({ id: "s1-2", name: "Nike Es la Cultura",                     popularity: 50, trackNumber: 3 }),
-      makeTrack({ id: "s1-3", name: "Morta Punto Com",                        popularity: 50, trackNumber: 4 }),
-      makeTrack({ id: "s1-4", name: "Dr. Saturno",                            popularity: 50, trackNumber: 5 }),
+      makeTrack({ id: "s1-0", name: "Una Rata Muerta Entre los Geranios",      popularity: 50, trackNumber: 1 }),
+      makeTrack({ id: "s1-1", name: "Sopa de Lágrimas (Para el Pibe Delete)",  popularity: 50, trackNumber: 2 }),
+      makeTrack({ id: "s1-2", name: "Nike Es la Cultura",                      popularity: 50, trackNumber: 3 }),
+      makeTrack({ id: "s1-3", name: "Morta Punto Com",                         popularity: 50, trackNumber: 4 }),
+      makeTrack({ id: "s1-4", name: "Dr. Saturno",                             popularity: 50, trackNumber: 5 }),
     ];
 
     const result = computeScore(slots);
-    printSetlist("Stage 1 — Convocatoria baja (todos penalizados)", slots, result);
+    printSetlist("Stage 1 — Convocatoria baja (todos penalizados ×0.5)", slots, result);
 
     expect(result.won).toBe(false);
     expect(result.attendance).toBeGreaterThanOrEqual(100_000);
     expect(result.attendance).toBeLessThanOrEqual(200_000);
   });
 
-  it("stage 2 — apertura/cierre top (≥90), pogo mediocre penalizado (~200k–300k, total=369)", () => {
-    // Apertura pop=90 → ×1.25=112.5 (no penalty)
-    // Pogo pop=88 < 90 → ×0.5=44 (PENALTY; Caña Seca y un Membrillo, raw=63)
-    // Cierre pop=90 → ×1.25=112.5 (no penalty)
-    // sum = 112.5 + 50 + 44 + 50 + 112.5 = 369 → stage 2
+  it("stage 2 — apertura/cierre ≥90, pogo pop=75 tier 70–79 (×0.75); sum=381.25 → ~200k–300k", () => {
+    // slot 0: 90×1.25=112.5 | slot 1: 50×1=50 | slot 2: 75×0.75=56.25 | slot 3: 50×1=50 | slot 4: 90×1.25=112.5
+    // sum = 381.25 → 353 ≤ sum ≤ 411
     const slots: GameTrack[] = [
       makeTrack({ id: "s2-0", name: "La Hija del Fletero",          popularity: 90, trackNumber: 1 }),
       makeTrack({ id: "s2-1", name: "Morta Punto Com",              popularity: 50, trackNumber: 2 }),
-      makeTrack({ id: "s2-2", name: "Caña Seca y un Membrillo",     popularity: 88, trackNumber: 3 }),
+      makeTrack({ id: "s2-2", name: "Caña Seca y un Membrillo",     popularity: 75, trackNumber: 3 }),
       makeTrack({ id: "s2-3", name: "Dr. Saturno",                  popularity: 50, trackNumber: 4 }),
       makeTrack({ id: "s2-4", name: "Salando las Heridas",          popularity: 90, trackNumber: 5 }),
     ];
 
     const result = computeScore(slots);
-    printSetlist("Stage 2 — Apertura/Cierre top, pogo penalizado", slots, result);
+    printSetlist("Stage 2 — Apertura/Cierre top, pogo tier 70–79 (×0.75)", slots, result);
 
     expect(result.won).toBe(false);
     expect(result.attendance).toBeGreaterThanOrEqual(200_000);
     expect(result.attendance).toBeLessThanOrEqual(300_000);
   });
 
-  it("stage 3 — gran convocatoria sin ganar, todo ≥90 (~300k–400k, total≈551)", () => {
-    // All special slots ≥90 → no penalty
-    // 95×1.25 + 93×1 + 91×1.5 + 90×1 + 90×1.25 = 118.75+93+136.5+90+112.5 = 550.75 > 411
-    // pogo: "Todo un Palo" — no es track ganador
+  it("stage 2 — todos en tier 80–89 (×1 neutral); sum = 85×5 = 425... usando pop=80; sum=400 → ~200k–300k", () => {
+    // slot 0: 80×1=80 | slot 1: 80×1=80 | slot 2: 80×1=80 | slot 3: 80×1=80 | slot 4: 80×1=80
+    // sum = 400 → stage 2
     const slots: GameTrack[] = [
-      makeTrack({ id: "s3-0", name: "La Bestia Pop",                          popularity: 95, trackNumber: 1 }),
-      makeTrack({ id: "s3-1", name: "Vencedores Vencidos",                    popularity: 93, trackNumber: 2 }),
-      makeTrack({ id: "s3-2", name: "Todo un Palo",                           popularity: 91, trackNumber: 3 }),
-      makeTrack({ id: "s3-3", name: "Una Piba Con la Remera de Greenpeace",   popularity: 90, trackNumber: 4 }),
-      makeTrack({ id: "s3-4", name: "Yo Caníbal",                             popularity: 90, trackNumber: 5 }),
+      makeTrack({ id: "n2-0", name: "La Bestia Pop",              popularity: 80, trackNumber: 1 }),
+      makeTrack({ id: "n2-1", name: "Vencedores Vencidos",        popularity: 80, trackNumber: 2 }),
+      makeTrack({ id: "n2-2", name: "Caña Seca y un Membrillo",   popularity: 80, trackNumber: 3 }),
+      makeTrack({ id: "n2-3", name: "Yo Caníbal",                 popularity: 80, trackNumber: 4 }),
+      makeTrack({ id: "n2-4", name: "Salando las Heridas",        popularity: 80, trackNumber: 5 }),
+    ];
+
+    const result = computeScore(slots);
+    printSetlist("Stage 2 — Todos tier 80–89 (×1 neutral, no bonus)", slots, result);
+
+    expect(result.won).toBe(false);
+    expect(result.attendance).toBeGreaterThanOrEqual(200_000);
+    expect(result.attendance).toBeLessThanOrEqual(300_000);
+  });
+
+  it("stage 3 — todo ≥90, no winning pogo; sum=540 → ~300k–400k", () => {
+    // slot 0: 95×1.25=118.75 | slot 1: 93×1=93 | slot 2: 91×1.5=136.5 | slot 3: 90×1=90 | slot 4: 90×1.25=112.5
+    // sum = 550.75 > 411; "Todo un Palo" no es track ganador
+    const slots: GameTrack[] = [
+      makeTrack({ id: "s3-0", name: "La Bestia Pop",                        popularity: 95, trackNumber: 1 }),
+      makeTrack({ id: "s3-1", name: "Vencedores Vencidos",                  popularity: 93, trackNumber: 2 }),
+      makeTrack({ id: "s3-2", name: "Todo un Palo",                         popularity: 91, trackNumber: 3 }),
+      makeTrack({ id: "s3-3", name: "Una Piba Con la Remera de Greenpeace", popularity: 90, trackNumber: 4 }),
+      makeTrack({ id: "s3-4", name: "Yo Caníbal",                           popularity: 90, trackNumber: 5 }),
     ];
 
     const result = computeScore(slots);
@@ -460,9 +575,9 @@ describe("stage scenarios (real track names)", () => {
     expect(result.attendance).toBeLessThanOrEqual(400_000);
   });
 
-  it("win — estadio lleno con Ji Ji Ji en el pogo, todo ≥90 (total≈555)", () => {
-    // All ≥90 → no penalty. 95×1.25 + 93×1 + 93×1.5 + 91×1 + 90×1.25
-    //   = 118.75+93+139.5+91+112.5 = 554.75 > 411; Ji Ji Ji ★ → gana
+  it("win — Ji Ji Ji ≥90 en pogo (×1.5), sum≈554 > 411 → estadio lleno", () => {
+    // slot 0: 95×1.25=118.75 | slot 1: 93×1=93 | slot 2: 93×1.5=139.5 | slot 3: 91×1=91 | slot 4: 90×1.25=112.5
+    // sum = 554.75 > 411; Ji Ji Ji ★ → gana
     const slots: GameTrack[] = [
       makeTrack({ id: "sw-0", name: "La Bestia Pop",                        popularity: 95, trackNumber: 1 }),
       makeTrack({ id: "sw-1", name: "Vencedores Vencidos",                  popularity: 93, trackNumber: 2 }),
@@ -472,16 +587,16 @@ describe("stage scenarios (real track names)", () => {
     ];
 
     const result = computeScore(slots);
-    printSetlist("WIN — Ji Ji Ji en el pogo (todo ≥90)", slots, result);
+    printSetlist("WIN — Ji Ji Ji en pogo (≥90, sin penalización)", slots, result);
 
     expect(result.won).toBe(true);
     expect(result.attendance).toBe(400_000);
   });
 
-  it("baja convocatoria con pogo ganador — no gana por penalización (total≈159)", () => {
-    // Nadie Es Perfecto pop=72 < 90 → pogo penalizado (×0.5=36)
-    // 40×0.5 + 40×1 + 72×0.5 + 43×1 + 40×0.5 = 20+40+36+43+20 = 159 ≤ 352
-    // track ganador en pogo pero penalizado → not won
+  it("pogo ganador de baja popularidad — no gana por tier penalty (total≈177 ≤ 352)", () => {
+    // Nadie Es Perfecto pop=72 → tier 70–79 → ×0.75=54 (pogo penalizado parcialmente)
+    // slot 0: 40×0.5=20 | slot 1: 40×1=40 | slot 2: 72×0.75=54 | slot 3: 43×1=43 | slot 4: 40×0.5=20
+    // sum = 177 ≤ 352 → stage 1, no win
     const slots: GameTrack[] = [
       makeTrack({ id: "bp-0", name: "La Ciudad de los Encandilados",           popularity: 40, trackNumber: 1 }),
       makeTrack({ id: "bp-1", name: "Canción para un Goldfish",                popularity: 40, trackNumber: 2 }),
@@ -498,61 +613,96 @@ describe("stage scenarios (real track names)", () => {
     expect(result.attendance).toBeLessThanOrEqual(200_000);
   });
 
-  it("buena convocatoria con pogo ganador distinto a Ji Ji Ji — gana (total≈564)", () => {
-    // El Pibe de los Astilleros pop=93 ≥ 90 → ×1.5=139.5 (no penalty)
-    // 95×1.25 + 95×1 + 93×1.5 + 98×1 + 90×1.25 = 118.75+95+139.5+98+112.5 = 563.75 > 411 → gana
+  it("win con El Pibe de los Astilleros ≥90 en pogo — gana (sum≈563)", () => {
+    // slot 0: 95×1.25=118.75 | slot 1: 95×1=95 | slot 2: 93×1.5=139.5 | slot 3: 98×1=98 | slot 4: 90×1.25=112.5
+    // sum = 563.75 > 411; El Pibe de los Astilleros ★ → gana
     const slots: GameTrack[] = [
-      makeTrack({ id: "ep-0", name: "Esa Estrella Era Mi Lujo",        popularity: 95, trackNumber: 1 }),
-      makeTrack({ id: "ep-1", name: "Tarea Fina",                      popularity: 95, trackNumber: 2 }),
-      makeTrack({ id: "ep-2", name: "El Pibe de los Astilleros",       popularity: 93, trackNumber: 3 }),
-      makeTrack({ id: "ep-3", name: "Un Poco de Amor Francés",         popularity: 98, trackNumber: 4 }),
-      makeTrack({ id: "ep-4", name: "Preso en Mi Ciudad",              popularity: 90, trackNumber: 5 }),
+      makeTrack({ id: "ep-0", name: "Esa Estrella Era Mi Lujo",      popularity: 95, trackNumber: 1 }),
+      makeTrack({ id: "ep-1", name: "Tarea Fina",                    popularity: 95, trackNumber: 2 }),
+      makeTrack({ id: "ep-2", name: "El Pibe de los Astilleros",     popularity: 93, trackNumber: 3 }),
+      makeTrack({ id: "ep-3", name: "Un Poco de Amor Francés",       popularity: 98, trackNumber: 4 }),
+      makeTrack({ id: "ep-4", name: "Preso en Mi Ciudad",            popularity: 90, trackNumber: 5 }),
     ];
 
     const result = computeScore(slots);
-    printSetlist("Buena convocatoria + El Pibe de los Astilleros en pogo (gana)", slots, result);
+    printSetlist("WIN — El Pibe de los Astilleros en pogo (≥90)", slots, result);
 
     expect(result.won).toBe(true);
     expect(result.attendance).toBe(400_000);
   });
 });
 
-// ── Penalización en slots especiales ─────────────────────────────────────────
+// ── Tier interactions in special slots ───────────────────────────────────────
 
-describe("penalización en slots especiales (real track names)", () => {
-  it("pogo ganador penalizado (pop=71 < 90) — no gana aunque el nombre es ganador (total≈360.5)", () => {
-    // Fuegos de Octubre pop=71 < 90 → pogo PENALIZADO: ×0.5=35.5 en vez de ×1.5=106.5
-    // Sin penalización: 112.5+50+106.5+50+112.5 = 431.5 > 411 → ganaría
-    // Con penalización: 112.5+50+35.5+50+112.5 = 360.5 → stage 2, no gana
+describe("tier interactions in special slots (real track names)", () => {
+  it("Fuegos de Octubre pop=71 → tier 70–79 (×0.75); sum=378.25 → stage 2, no gana", () => {
+    // Sin penalización hubiera sido: 112.5+50+106.5+50+112.5 = 431.5 > 411 → ganaría
+    // Con tier 70–79 (×0.75): 112.5+50+53.25+50+112.5 = 378.25 → stage 2, no gana
     const slots: GameTrack[] = [
-      makeTrack({ id: "pe-0", name: "La Hija del Fletero",                   popularity: 90, trackNumber: 1 }),
-      makeTrack({ id: "pe-1", name: "Una Rata Muerta Entre los Geranios",    popularity: 50, trackNumber: 2 }),
-      makeTrack({ id: "pe-2", name: "Fuegos de Octubre",                     popularity: 71, trackNumber: 3 }),
-      makeTrack({ id: "pe-3", name: "Sopa de Lágrimas (Para el Pibe Delete)",popularity: 50, trackNumber: 4 }),
-      makeTrack({ id: "pe-4", name: "Salando las Heridas",                   popularity: 90, trackNumber: 5 }),
+      makeTrack({ id: "t70-0", name: "La Hija del Fletero",                    popularity: 90, trackNumber: 1 }),
+      makeTrack({ id: "t70-1", name: "Una Rata Muerta Entre los Geranios",     popularity: 50, trackNumber: 2 }),
+      makeTrack({ id: "t70-2", name: "Fuegos de Octubre",                      popularity: 71, trackNumber: 3 }),
+      makeTrack({ id: "t70-3", name: "Sopa de Lágrimas (Para el Pibe Delete)", popularity: 50, trackNumber: 4 }),
+      makeTrack({ id: "t70-4", name: "Salando las Heridas",                    popularity: 90, trackNumber: 5 }),
     ];
 
     const result = computeScore(slots);
-    printSetlist("Fuegos de Octubre en pogo — penalizado (no gana)", slots, result);
+    printSetlist("Fuegos de Octubre pop=71 tier 70–79 (no gana)", slots, result);
 
     expect(result.won).toBe(false);
     expect(result.attendance).toBeGreaterThanOrEqual(200_000);
     expect(result.attendance).toBeLessThanOrEqual(300_000);
   });
 
-  it("mismo setlist con Ji Ji Ji (pop=93 ≥ 90) en pogo — no penalizado, gana (total≈464.5)", () => {
-    // Ji Ji Ji pop=93 ≥ 90 → pogo SIN penalización: ×1.5=139.5
-    // 112.5+50+139.5+50+112.5 = 464.5 > 411 → gana
+  it("Fuegos de Octubre pop=85 → tier 80–89 (×1); sum=425.5 > 411 → stage 3, no gana (suma OK pero no llega a win)", () => {
+    // slot 0: 90×1.25=112.5 | slot 1: 50×1=50 | slot 2: 85×1=85 | slot 3: 50×1=50 | slot 4: 90×1.25=112.5
+    // sum = 410 ≤ 411 → stage 2, not won
+    // Use slightly higher for slot 1/3 to push past 411 without winning
+    // slot 0: 90×1.25=112.5 | slot 1: 65×1=65 | slot 2: 85×1=85 | slot 3: 65×1=65 | slot 4: 90×1.25=112.5
+    // sum = 440 > 411 → stage 3, no win (Fuegos de Octubre is a winning name but we test the case where it wins)
+    // Actually Fuegos de Octubre IS a winning name — this test confirms it wins when pop ≥ 90 but not in lower tiers
     const slots: GameTrack[] = [
-      makeTrack({ id: "pg-0", name: "La Hija del Fletero",                   popularity: 90, trackNumber: 1 }),
-      makeTrack({ id: "pg-1", name: "Una Rata Muerta Entre los Geranios",    popularity: 50, trackNumber: 2 }),
-      makeTrack({ id: "pg-2", name: "Ji Ji Ji",                              popularity: 93, trackNumber: 3 }),
-      makeTrack({ id: "pg-3", name: "Sopa de Lágrimas (Para el Pibe Delete)",popularity: 50, trackNumber: 4 }),
-      makeTrack({ id: "pg-4", name: "Salando las Heridas",                   popularity: 90, trackNumber: 5 }),
+      makeTrack({ id: "t85-0", name: "La Hija del Fletero",                    popularity: 90, trackNumber: 1 }),
+      makeTrack({ id: "t85-1", name: "Una Rata Muerta Entre los Geranios",     popularity: 65, trackNumber: 2 }),
+      makeTrack({ id: "t85-2", name: "Fuegos de Octubre",                      popularity: 85, trackNumber: 3 }),
+      makeTrack({ id: "t85-3", name: "Sopa de Lágrimas (Para el Pibe Delete)", popularity: 65, trackNumber: 4 }),
+      makeTrack({ id: "t85-4", name: "Salando las Heridas",                    popularity: 90, trackNumber: 5 }),
+    ];
+    // sum = 112.5+65+85+65+112.5 = 440 > 411; Fuegos de Octubre pop=85 (tier 80–89 ×1) IS a winning name
+    // but pop=85 < 90, so no win — wait, pop=85 < 90 so tier 80–89 → ×1 (not full), but it still IS a winning name
+    // computeScore checks pogoIsWinning from the NAME, and popularitySum > STAGE2_MAX — both true here!
+    // So this WILL win. Let's use a non-winning track name to test stage 3 without win.
+    // Correction: this test demonstrates tier 80–89 pushing sum into stage 3.
+    // Using a non-winning name:
+    const slots2: (GameTrack | null)[] = [
+      makeTrack({ id: "t85b-0", name: "La Hija del Fletero",   popularity: 90 }),
+      makeTrack({ id: "t85b-1", name: "Morta Punto Com",        popularity: 65 }),
+      makeTrack({ id: "t85b-2", name: "Caña Seca y un Membrillo", popularity: 85 }),
+      makeTrack({ id: "t85b-3", name: "Dr. Saturno",            popularity: 65 }),
+      makeTrack({ id: "t85b-4", name: "Salando las Heridas",    popularity: 90 }),
+    ];
+    // sum = 112.5+65+85+65+112.5 = 440 > 411; non-winning pogo → stage 3, no win
+    const result = computeScore(slots2);
+    printSetlist("Tier 80–89 en pogo → stage 3, sin ganar (pogo no ganador)", slots as GameTrack[], result);
+
+    expect(result.won).toBe(false);
+    expect(result.attendance).toBeGreaterThanOrEqual(300_000);
+    expect(result.attendance).toBeLessThanOrEqual(400_000);
+  });
+
+  it("Ji Ji Ji pop=90 (≥90 → ×1.5); mismo setlist que arriba → gana", () => {
+    // slot 0: 90×1.25=112.5 | slot 1: 50×1=50 | slot 2: 90×1.5=135 | slot 3: 50×1=50 | slot 4: 90×1.25=112.5
+    // sum = 460 > 411; Ji Ji Ji ★ → gana
+    const slots: GameTrack[] = [
+      makeTrack({ id: "pg-0", name: "La Hija del Fletero",                    popularity: 90, trackNumber: 1 }),
+      makeTrack({ id: "pg-1", name: "Una Rata Muerta Entre los Geranios",     popularity: 50, trackNumber: 2 }),
+      makeTrack({ id: "pg-2", name: "Ji Ji Ji",                               popularity: 90, trackNumber: 3 }),
+      makeTrack({ id: "pg-3", name: "Sopa de Lágrimas (Para el Pibe Delete)", popularity: 50, trackNumber: 4 }),
+      makeTrack({ id: "pg-4", name: "Salando las Heridas",                    popularity: 90, trackNumber: 5 }),
     ];
 
     const result = computeScore(slots);
-    printSetlist("Ji Ji Ji en pogo — sin penalización (gana)", slots, result);
+    printSetlist("Ji Ji Ji pop=90 (×1.5 sin penalización) — gana", slots, result);
 
     expect(result.won).toBe(true);
     expect(result.attendance).toBe(400_000);

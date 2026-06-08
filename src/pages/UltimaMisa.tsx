@@ -268,6 +268,7 @@ export default function UltimaMisa() {
                 album={currentAlbum}
                 mode={mode}
                 selectedIds={selectedIds}
+                pendingId={pendingTrack?.id}
                 onSelect={onPickTrack}
                 hasFreeSlot={hasFreeSlot}
               />
@@ -285,18 +286,57 @@ export default function UltimaMisa() {
 
         <section className="misa-panel">
           <h2 className="misa-panel-title">El setlist</h2>
-          {pendingTrack && (
-            <p
-              className="picker-cta"
-              style={{ marginTop: 0, marginBottom: "0.75rem" }}
-            >
-              «{pendingTrack.name}» lista — elegí un lugar libre del setlist
-            </p>
-          )}
+          <div className={`pending-preview${!pendingTrack ? " pending-preview--empty" : ""}`}>
+            {pendingTrack ? (
+              <>
+                {pendingTrack.albumCover ? (
+                  <img
+                    className="pending-preview-cover"
+                    src={pendingTrack.albumCover}
+                    alt=""
+                  />
+                ) : (
+                  <div className="pending-preview-cover pending-preview-cover--empty">♪</div>
+                )}
+                <div className="pending-preview-body">
+                  <p className="pending-preview-name">{pendingTrack.name}</p>
+                  <p className="pending-preview-album">{pendingTrack.albumName}</p>
+                </div>
+                {mode === "easy" && (
+                  <span className="slot-pop">
+                    {pendingTrack.popularity >= 90 && (
+                      <span className="slot-pop-star">★</span>
+                    )}
+                    <span
+                      className="slot-pop-num"
+                      style={{
+                        color:
+                          pendingTrack.popularity >= 70
+                            ? "#2ecc71"
+                            : pendingTrack.popularity >= 51
+                              ? "#f1c40f"
+                              : "#e74c3c",
+                      }}
+                    >
+                      {pendingTrack.popularity}
+                    </span>
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="pending-preview-cover pending-preview-cover--empty">♪</div>
+                <div className="pending-preview-body">
+                  <p className="pending-preview-placeholder">Elegí una canción del álbum</p>
+                </div>
+              </>
+            )}
+          </div>
 
           <Setlist
             slots={slots}
             pendingTrack={pendingTrack}
+            mode={mode}
             onAssign={assignToSlot}
           />
 

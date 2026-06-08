@@ -1,8 +1,8 @@
 import type { GameAlbum, GameTrack, Mode } from "../../lib/misaGame";
 
 function popColor(p: number): string {
-  if (p >= 67) return "#2ecc71";
-  if (p >= 34) return "#f1c40f";
+  if (p >= 70) return "#2ecc71";
+  if (p >= 51) return "#f1c40f";
   return "#e74c3c";
 }
 
@@ -10,6 +10,7 @@ interface Props {
   album: GameAlbum;
   mode: Mode;
   selectedIds: string[];
+  pendingId?: string;
   onSelect: (track: GameTrack) => void;
   hasFreeSlot: boolean;
 }
@@ -18,6 +19,7 @@ export default function TrackPicker({
   album,
   mode,
   selectedIds,
+  pendingId,
   onSelect,
   hasFreeSlot,
 }: Props) {
@@ -42,11 +44,16 @@ export default function TrackPicker({
       <ul className="picker-list">
         {album.tracks.map((track) => {
           const selected = selectedIds.includes(track.id);
-          const disabled = selected || !hasFreeSlot;
+          const pending = track.id === pendingId;
+          const disabled = selected || (!pending && !hasFreeSlot);
           return (
             <li key={track.id}>
               <button
-                className={`picker-track${selected ? " picker-track--selected" : ""}`}
+                className={[
+                  "picker-track",
+                  selected ? "picker-track--selected" : "",
+                  pending ? "picker-track--pending" : "",
+                ].filter(Boolean).join(" ")}
                 onClick={() => onSelect(track)}
                 disabled={disabled}
               >
@@ -54,12 +61,9 @@ export default function TrackPicker({
                 <span className="picker-track-name">{track.name}</span>
                 {mode === "easy" ? (
                   <span className="picker-pop" title="Popularidad">
-                    <span className="picker-pop-bar">
-                      <span
-                        className="picker-pop-fill"
-                        style={{ width: `${track.popularity}%` }}
-                      />
-                    </span>
+                    {track.popularity > 90 && (
+                      <span className="picker-pop-star">★</span>
+                    )}
                     <span
                       className="picker-pop-num"
                       style={{ color: popColor(track.popularity) }}

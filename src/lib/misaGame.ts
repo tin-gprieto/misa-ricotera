@@ -30,8 +30,8 @@ const MULTIPLIERS = [1.25, 1, 1.5, 1, 1.25]; // by slot index
 const POGO_SLOT_INDEX = 2;
 
 // Stage thresholds (popularity sum boundaries)
-const STAGE1_MAX = 352; // 0–352 → stage 1
-const STAGE2_MAX = 411; // 353–411 → stage 2; 412+ → stage 3 or 4
+const STAGE1_MAX = 350; // 0–352 → stage 1
+const STAGE2_MAX = 420; // 353–411 → stage 2; 412+ → stage 3 or 4
 
 const WINNING_POGO_TRACKS = [
   "ñam fri fruli fali fru",
@@ -42,21 +42,29 @@ const WINNING_POGO_TRACKS = [
   "el pibe de los astilleros",
   "nadie es perfecto",
   "mariposa pontiac",
+  "todo un palo"
 ];
 
 export function slotMultiplier(index: number): number {
   return MULTIPLIERS[index] ?? 1;
 }
 
-// Penalty: special slots (apertura, pogo, cierre) with popularity below this
-// threshold use PENALTY_MULT instead of their normal multiplier.
+// Penalty tiers for special slots (apertura, pogo, cierre):
+//   < 70  → ×0.5 penalty
+//   70–89 → ×1   neutral (no bonus, no penalty)
+//   ≥ 90  → normal slot multiplier
 const SPECIAL_SLOTS: ReadonlySet<number> = new Set([0, 2, 4]);
 export const SPECIAL_SLOT_THRESHOLD = 90;
+const GOOD_THRESHOLD = 80;
+const NEUTRAL_THRESHOLD = 70;
 const PENALTY_MULT = 0.5;
+const LESS_PENALTY_MULT = 0.75;
 
 export function effectiveMultiplier(slotIndex: number, popularity: number): number {
-  if (SPECIAL_SLOTS.has(slotIndex) && popularity < SPECIAL_SLOT_THRESHOLD) {
-    return PENALTY_MULT;
+  if (SPECIAL_SLOTS.has(slotIndex)) {
+    if (popularity < NEUTRAL_THRESHOLD) return PENALTY_MULT;
+    if (popularity < GOOD_THRESHOLD) return LESS_PENALTY_MULT;
+    if (popularity < SPECIAL_SLOT_THRESHOLD) return 1;
   }
   return slotMultiplier(slotIndex);
 }
